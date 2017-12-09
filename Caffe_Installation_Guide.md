@@ -5,6 +5,17 @@
 - Don't use `gcc 6` as CUDA doesn't support `gcc` later than 5
 - Caffe uses OpenCV 2.4 by default (3.0 works?)
 
+## Building Steps
+
+```shell
+# will create python scripts inside python/caffe folder
+make pycaffe
+````
+
+## Post-building
+
+Add `python/caffe` to environment variable `PYTHONPATH`
+
 ## Compiler/Lib Issues
 
 ### Use the Right `gcc`
