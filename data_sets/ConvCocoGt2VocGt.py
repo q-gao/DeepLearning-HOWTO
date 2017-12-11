@@ -69,6 +69,7 @@ class Coco2VocGTConveter:
 
     def ConvertFile(self, cocoJsonFile, vocXmlDir, imgListFile):
         # load Json
+        print('Loading COCO GT {} ...'.format(cocoJsonFile))
         coco_gt = COCO(cocoJsonFile)
 
         catIds = coco_gt.getCatIds()  # a list of IDs 1-90
@@ -114,10 +115,12 @@ class Coco2VocGTConveter:
                 except IOError:
                     print('Failed to open {} for writing'.format(numXmlFiles))
 
+        print('\nCreating image list file {} ...'.format(imgListFile))
         with open(imgListFile, 'w') as f:
             for k in sorted(d_includedImgNms.keys()):
                 f.write(os.path.splitext(imgFileNm)[0] + '\n')
-        print('Total {} VOC XML files are generated: numIsCrowd={}'.format(numXmlFiles, self.numIsCrowd))
+
+        print('\nTotal {} VOC XML files are generated: numIsCrowd={}'.format(numXmlFiles, self.numIsCrowd))
     def PerImgConvert(self, cocoImgInfo, cocoAnno):
         '''
         cocoImgInfo:
@@ -172,9 +175,16 @@ class Coco2VocGTConveter:
         return textwrap.dedent(xmlFixed + xmlObj) + '</annotation>\n'
 
 if __name__ == '__main__':
-    #cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_minival2014.json'
-    cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_valminusminival2014.json'
     c = Coco2VocGTConveter()
+
+    # cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_train2014.json'
+    # c.ConvertFile(cocoGtFile, '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_train2014/Annotations',
+    #               '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_train2014/ImageSets/Main/trainl2014.txt'
+    # )
+
+    #cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_minival2014.json'
+    #cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_valminusminival2014.json'
+    cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_val2014.json'
     c.ConvertFile(cocoGtFile, '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/Annotations',
-                  '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/ImageSets/Main/valminusminival2014.txt'
+                  '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/ImageSets/Main/val2014.txt'
     )
