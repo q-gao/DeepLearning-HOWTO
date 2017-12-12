@@ -28,7 +28,48 @@ make runtest
 
 #### Datasets
 
-Data layout
+#### Create File Info List
+`data/VOC0712/create_list.sh`: 
+**INPUTS:**
+>`$voc_root_dir/$name/$sub_dir/$dataset.txt` (e.g., VOCdevkit/VOC2007/ImageSets/Main)
+
+**OUTPUTS:**
+- `<script_folder>/$dataset.txt`
+an example line in `$dataset.txt` (note **`JPEGImages`** and **'Annotatopms'** are hard-coded):
+ `VOC2007/JPEGImages/000001.jpg VOC2007/Annotations/000001.xml`
+- `<script_folder>/test_name_size.txt` **if $dataset == 'test'** with example line below
+>`000001 500 353  #(Height Width) found by get_image_size.cpp`
+
+**NOTE:**
+ - if `$dataset == 'trainval`', `<script_folder>/trainval.txt` is **shuffled**!
+```
+caffe-ssd/data/
+├── coco/
+│   ├── create_data.sh*
+│   ├── create_list_coco.sh*
+│   ├── create_list.py
+│   ├── labelmap_voc.prototxt
+│   └── valminusminival2014.txt
+└── VOC0712/
+    ├── create_data.sh*
+    ├── create_list.sh*
+    ├── labelmap_voc.prototxt
+    ├── test_name_size.txt
+    ├── test.txt
+    └── trainval.txt
+```
+
+#### Create lmdb
+
+`data/VOC0712/create_data.sh`:
+**INPUTS:**
+ - `$root_dir/data/$dataset_name/labelmap_voc.prototxt`
+ - `$root_dir/data/$dataset_name/$subset.txt`
+
+**OUTPUTS:**
+ - `$data_root_dir/$dataset_name/lmdb/$dataset_name"_"$subset"_"lmdb`
+ - symbolic links to lmdb in `'examples/$dataset_name'`
+ 
 ```shell
 VOCData/VOCdevkit/
 ├── COCO_val2014/
@@ -55,36 +96,6 @@ caffe-ssd/examples/
 │   ├── VOC0712_test_lmdb -> /local/mnt/workspace/qgao/VOCData/VOCdevkit//VOC0712/lmdb/VOC0712_test_lmdb/
 │   └── VOC0712_trainval_lmdb -> /local/mnt/workspace/qgao/VOCData/VOCdevkit//VOC0712/lmdb/VOC0712_trainval_lmdb/
 ```
-```
-caffe-ssd/data/
-├── coco/
-│   ├── create_data.sh*
-│   ├── create_list_coco.sh*
-│   ├── create_list.py
-│   ├── labelmap_voc.prototxt
-│   └── valminusminival2014.txt
-└── VOC0712/
-    ├── create_data.sh*
-    ├── create_list.sh*
-    ├── labelmap_voc.prototxt
-    ├── test_name_size.txt
-    ├── test.txt
-    └── trainval.txt
-```
-
-##### VOC
-```shell
-├── VOC0712/
-│   └── lmdb/
-├── VOC2007/
-│   ├── Annotations/
-│   ├── ImageSets/
-│   ├── JPEGImages/
-└── VOC2012/
-    ├── Annotations/
-    ├── ImageSets/
-    ├── JPEGImages/
-```
 
 ##### COCO
 
@@ -100,30 +111,4 @@ caffe-ssd/data/
     ├── train2014/
     └── val2014/
 ```
-#### Create File Info List
-`data/VOC0712/create_list.sh`: 
-**INPUTS:**
->`$voc_root_dir/$name/$sub_dir/$dataset.txt` (e.g., VOCdevkit/VOC2007/ImageSets/Main)
-
-**OUTPUTS:**
-- `<script_folder>/$dataset.txt`
-an example line in `$dataset.txt` (note **`JPEGImages`** and **'Annotatopms'** are hard-coded):
- `VOC2007/JPEGImages/000001.jpg VOC2007/Annotations/000001.xml`
-- `<script_folder>/test_name_size.txt` **if $dataset == 'test'** with example line below
->`000001 500 353  #(Height Width) found by get_image_size.cpp`
-
-**NOTE:**
- - if `$dataset == 'trainval`', `<script_folder>/trainval.txt` is **shuffled**!
-
-
-#### Create lmdb
-
-`data/VOC0712/create_data.sh`:
-**INPUTS:**
- - `$root_dir/data/$dataset_name/labelmap_voc.prototxt`
- - `$root_dir/data/$dataset_name/$subset.txt`
-
-**OUTPUTS:**
- - `$data_root_dir/$dataset_name/lmdb/$dataset_name"_"$subset"_"lmdb`
- - symbolic links to lmdb in `'examples/$dataset_name'`
 
