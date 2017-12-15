@@ -1,0 +1,1 @@
+[Learning Note- Single Shot MultiBox Detector with Pytorch — Part 2] (https://towardsdatascience.com/learning-note-single-shot-multibox-detector-with-pytorch-part-2-dd96bdf4f434)
