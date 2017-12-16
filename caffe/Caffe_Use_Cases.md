@@ -28,8 +28,55 @@ make runtest
 
 #### Datasets
 
-##### VOC
+#### Create File Info List
+`data/VOC0712/create_list.sh`: 
+**INPUTS:**
+>`$voc_root_dir/$name/$sub_dir/$dataset.txt` (e.g., VOCdevkit/VOC2007/ImageSets/Main)
+
+**OUTPUTS:**
+- `<script_folder>/$dataset.txt`
+an example line in `$dataset.txt` (note **`JPEGImages`** and **'Annotatopms'** are hard-coded):
+ `VOC2007/JPEGImages/000001.jpg VOC2007/Annotations/000001.xml`
+- `<script_folder>/test_name_size.txt` **if $dataset == 'test'** with example line below
+>`000001 500 353  #(Height Width) found by get_image_size.cpp`
+
+**NOTE:**
+ - if `$dataset == 'trainval`', `<script_folder>/trainval.txt` is **shuffled**!
+```
+caffe-ssd/data/
+├── coco/
+│   ├── create_data.sh*
+│   ├── create_list_coco.sh*
+│   ├── create_list.py
+│   ├── labelmap_voc.prototxt
+│   └── valminusminival2014.txt
+└── VOC0712/
+    ├── create_data.sh*
+    ├── create_list.sh*
+    ├── labelmap_voc.prototxt
+    ├── test_name_size.txt
+    ├── test.txt
+    └── trainval.txt
+```
+
+#### Create lmdb
+
+`data/VOC0712/create_data.sh`:
+**INPUTS:**
+ - `$root_dir/data/$dataset_name/labelmap_voc.prototxt`
+ - `$root_dir/data/$dataset_name/$subset.txt`
+
+**OUTPUTS:**
+ - `$data_root_dir/$dataset_name/lmdb/$dataset_name"_"$subset"_"lmdb`
+ - symbolic links to lmdb in `'examples/$dataset_name'`
+ 
 ```shell
+VOCData/VOCdevkit/
+├── COCO_val2014/
+│   ├── Annotations/
+│   ├── ImageSets/
+│   ├── JPEGImages -> /local/mnt/workspace/qgao/COCO/images/val2014//
+│   ├── lmdb/
 ├── VOC0712/
 │   └── lmdb/
 ├── VOC2007/
@@ -40,6 +87,14 @@ make runtest
     ├── Annotations/
     ├── ImageSets/
     ├── JPEGImages/
+```
+```
+caffe-ssd/examples/
+├── COCO/
+│   └── valminusminival2014_lmdb -> /local/mnt/workspace/qgao/VOCData/VOCdevkit//COCO_val2014/lmdb/valminusminival2014_lmdb/
+├── VOC0712/
+│   ├── VOC0712_test_lmdb -> /local/mnt/workspace/qgao/VOCData/VOCdevkit//VOC0712/lmdb/VOC0712_test_lmdb/
+│   └── VOC0712_trainval_lmdb -> /local/mnt/workspace/qgao/VOCData/VOCdevkit//VOC0712/lmdb/VOC0712_trainval_lmdb/
 ```
 
 ##### COCO
@@ -56,15 +111,4 @@ make runtest
     ├── train2014/
     └── val2014/
 ```
-#### Create File Info List
-`data/VOC0712/create_list.sh` will create 3 files:
-- `data/VOC0712/trainval.txt`:  16551 files = 5011 VOC07 + 11540 VOC12
->`VOC2012/JPEGImages/2008_002422.jpg VOC2012/Annotations/2008_002422.xml`
 
-- `data/VOC0712/test.txt`: same format as above
-- `data/VOC0712/test_name_size.txt`: example line below
->`000001 500 353  #(Height Width) found by get_image_size.cpp`
-
-
-#### Create lmdb
-`data/VOC0712/create_data.sh` will lmdb files
