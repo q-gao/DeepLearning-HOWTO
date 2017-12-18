@@ -1,4 +1,16 @@
 # Caffe Use Cases
+<!-- TOC -->
+
+- [Caffe Use Cases](#caffe-use-cases)
+    - [SSD Object Detection](#ssd-object-detection)
+        - [Build](#build)
+        - [Data Preparation](#data-preparation)
+            - [Datasets](#datasets)
+            - [Create File Info List](#create-file-info-list)
+            - [Create lmdb](#create-lmdb)
+                - [COCO](#coco)
+
+<!-- /TOC -->
 
 ## SSD Object Detection
 

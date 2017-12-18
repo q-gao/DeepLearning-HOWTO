@@ -75,7 +75,8 @@ def GetTrainStat( trainOut ):
             result.listTrainIter.append(curIterIdx)
             result.listTrainLoss.append( float(m.group(1)) )
 
-        m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
+        #m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
+        m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
         if m:
             result.listTestIter.append(curIterIdx)
             result.listTestAccuracy.append( float(m.group(1)) )
