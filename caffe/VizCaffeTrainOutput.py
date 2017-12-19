@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function
-
+import numpy as np
 def CreateArgumentParser():
     import argparse
     import textwrap
@@ -15,11 +15,17 @@ def CreateArgumentParser():
                 ---------------------------------------------------------------------------
              ''')
             )
-    ap.add_argument("-l", "--logy", action="store_true",
-                    help="log y scale")
 
     ap.add_argument("train_out_files", nargs = '*',
                     help="Caffe training output files")
+
+    ap.add_argument("-x", "--xrange", nargs = '+', type = int, default = None,
+                    help="<x_min [<x_max>]>")
+
+    ap.add_argument("-l", "--logy", action="store_true",
+                    help="log y scale")
+    ap.add_argument("-w", "--avg_window_size", type = int,
+                    help="average window size in iterations")    
 
     return ap
 
@@ -84,10 +90,18 @@ def GetTrainStat( trainOut ):
     if isinstance(trainOut, basestring):
         dataSrc.close()
 
+    result.listTrainIter = np.array(result.listTrainIter, dtype=np.int)
+    result.listTrainLoss = np.array(result.listTrainLoss)
+    result.listTestIter  = np.array(result.listTestIter, dtype=np.int)
+    result.listTestAccuracy = np.array(result.listTestAccuracy)
     return result
 
 #def PlotTrainTestResult( result ):
 
+def MovingAverage (values, window, mode='same'):
+    weights = np.repeat(1.0, window)/window
+    sma = np.convolve(values, weights, mode)
+    return sma
 
 if __name__ == '__main__':
     ap = CreateArgumentParser()
@@ -107,11 +121,22 @@ if __name__ == '__main__':
         result = GetTrainStat(sys.stdin)
         plt.subplot(2, 1, 1)
         pltFunc(result.listTrainIter, result.listTrainLoss)
+        if args.avg_window_size is not None:
+            # [::-1] create a reversed-order view of the array
+            avg_loss = MovingAverage(result.listTrainLoss, args.avg_window_size)
+            pltFunc(result.listTrainIter, avg_loss)                            
         plt.subplot(2, 1, 2)
         pltFunc( result.listTestIter, result.listTestAccuracy)
+
+        idx_min = np.argmin(result.listTrainIter)
+        xmin = result.listTrainIter[idx_min]
+        idx_max = np.argmax(result.listTrainIter)
+        xmax = result.listTrainIter[idx_max]
     else:
         import glob
         pltLegend = []
+        xmin = xmax = 0
+        idx_min = idx_max = 0
         for fp in args.train_out_files:
             for dataFile in glob.glob(fp):
                 result = GetTrainStat( dataFile )
@@ -119,19 +144,48 @@ if __name__ == '__main__':
                 pltLegend.append( os.path.splitext(fname)[0] )
                 plt.subplot(2, 1, 1)
                 pltFunc(result.listTrainIter, result.listTrainLoss)
+                if args.avg_window_size is not None:  
+                    # [::-1] create a reversed-order view of the array                    
+                    # a = np.append(result.listTrainLoss, 
+                    #                     np.repeat(result.listTrainLoss[-1], args.avg_window_size-1)
+                    # )
+                    #a = np.array([result.listTrainLoss[i] for i in xrange(result.listTrainLoss.shape[0]-1, -1, -1) ])
+                    avg_loss = MovingAverage(result.listTrainLoss, args.avg_window_size)                    
+                    #avg_loss = MovingAverage(result.listTrainLoss[::-1], args.avg_window_size)
+                    pltFunc(result.listTrainIter, avg_loss)                
+
                 plt.subplot(2, 1, 2)
                 pltFunc(result.listTestIter, result.listTestAccuracy)
-                plt.xlim((min(result.listTrainIter),max(result.listTrainIter)))
-        plt.legend( pltLegend )
+                i = np.argmin(result.listTrainIter)
+                if xmin > result.listTrainIter[i]:
+                    xmin = result.listTrainIter[i]
+                    idx_min = i
+                i = np.argmax(result.listTrainIter)
+                if xmax < result.listTrainIter[i]:
+                    xmax = result.listTrainIter[i]
+                    idx_max = i
+
+    if args.xrange is None:
+        args.xrange = (xmin, xmax)
+    elif len(args.xrange) < 2:
+        idx_min = np.searchsorted(result.listTrainIter, args.xrange[0])
+        args.xrange.append(xmax)        
+    plt.legend( pltLegend )
 
     plt.subplot(2, 1, 1)
     plt.ylabel('Train Loss')
     plt.grid(b=True, which='major')
     plt.grid(b=True, which='minor',linestyle='--')
+    plt.ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
+               np.max(result.listTrainLoss[idx_min:idx_max+1])
+               )
+    )
+    plt.xlim(args.xrange)    
 
     plt.subplot(2, 1, 2)
     plt.grid(b=True, which='major')
     plt.grid(b=True, which='minor',linestyle='--')
     plt.xlabel('Train Iteration')
     plt.ylabel('Test Accuracy')
+    plt.xlim(args.xrange)    
     plt.show()
