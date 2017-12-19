@@ -15,8 +15,8 @@ def CreateArgumentParser():
                 ---------------------------------------------------------------------------
              ''')
             )
-    ap.add_argument("-l", "--logx", action="store_true",
-                    help="log x scale")
+    ap.add_argument("-l", "--logy", action="store_true",
+                    help="log y scale")
 
     ap.add_argument("train_out_files", nargs = '*',
                     help="Caffe training output files")
@@ -97,8 +97,9 @@ if __name__ == '__main__':
     import os.path
     import matplotlib.pyplot as plt
 
-    if args.logx:
-        pltFunc = plt.semilogx  # loglog
+    if args.logy:
+        # pltFunc = plt.semilogx  # loglog
+        pltFunc = plt.semilogy  # loglog
     else:
         pltFunc = plt.plot
 
@@ -120,6 +121,7 @@ if __name__ == '__main__':
                 pltFunc(result.listTrainIter, result.listTrainLoss)
                 plt.subplot(2, 1, 2)
                 pltFunc(result.listTestIter, result.listTestAccuracy)
+                plt.xlim((min(result.listTrainIter),max(result.listTrainIter)))
         plt.legend( pltLegend )
 
     plt.subplot(2, 1, 1)
