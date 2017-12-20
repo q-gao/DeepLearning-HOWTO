@@ -111,22 +111,26 @@ if __name__ == '__main__':
     import os.path
     import matplotlib.pyplot as plt
 
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
     if args.logy:
         # pltFunc = plt.semilogx  # loglog
-        pltFunc = plt.semilogy  # loglog
+        pltFunc1 = ax1.semilogy  # loglog
+        pltFunc2 = ax2.semilogy  # loglog
     else:
-        pltFunc = plt.plot
+        pltFunc1 = ax1.plot
+        pltFunc2 = ax2.plot
 
     if len(args.train_out_files) <= 0:
         result = GetTrainStat(sys.stdin)
-        plt.subplot(2, 1, 1)
-        pltFunc(result.listTrainIter, result.listTrainLoss)
+        # plt.subplot(2, 1, 1)
+        pltFunc1(result.listTrainIter, result.listTrainLoss)
         if args.avg_window_size is not None:
             # [::-1] create a reversed-order view of the array
             avg_loss = MovingAverage(result.listTrainLoss, args.avg_window_size)
             pltFunc(result.listTrainIter, avg_loss)                            
-        plt.subplot(2, 1, 2)
-        pltFunc( result.listTestIter, result.listTestAccuracy)
+        # plt.subplot(2, 1, 2)
+        pltFunc2( result.listTestIter, result.listTestAccuracy)
 
         idx_min = np.argmin(result.listTrainIter)
         xmin = result.listTrainIter[idx_min]
@@ -142,8 +146,8 @@ if __name__ == '__main__':
                 result = GetTrainStat( dataFile )
                 _, fname = os.path.split(dataFile)
                 pltLegend.append( os.path.splitext(fname)[0] )
-                plt.subplot(2, 1, 1)
-                pltFunc(result.listTrainIter, result.listTrainLoss)
+                #plt.subplot(2, 1, 1)
+                pltFunc1(result.listTrainIter, result.listTrainLoss)
                 if args.avg_window_size is not None:  
                     # [::-1] create a reversed-order view of the array                    
                     # a = np.append(result.listTrainLoss, 
@@ -152,10 +156,10 @@ if __name__ == '__main__':
                     #a = np.array([result.listTrainLoss[i] for i in xrange(result.listTrainLoss.shape[0]-1, -1, -1) ])
                     avg_loss = MovingAverage(result.listTrainLoss, args.avg_window_size)                    
                     #avg_loss = MovingAverage(result.listTrainLoss[::-1], args.avg_window_size)
-                    pltFunc(result.listTrainIter, avg_loss)                
+                    pltFunc1(result.listTrainIter, avg_loss)                
 
-                plt.subplot(2, 1, 2)
-                pltFunc(result.listTestIter, result.listTestAccuracy)
+                #plt.subplot(2, 1, 2)
+                pltFunc2(result.listTestIter, result.listTestAccuracy, 'r')
                 i = np.argmin(result.listTrainIter)
                 if xmin > result.listTrainIter[i]:
                     xmin = result.listTrainIter[i]
@@ -172,20 +176,25 @@ if __name__ == '__main__':
         args.xrange.append(xmax)        
     plt.legend( pltLegend )
 
-    plt.subplot(2, 1, 1)
-    plt.ylabel('Train Loss')
-    plt.grid(b=True, which='major')
-    plt.grid(b=True, which='minor',linestyle='--')
-    plt.ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
+    #plt.subplot(2, 1, 1)
+    ax1.set_ylabel('Train Loss')
+    ax1.set_xlabel('Train Iteration')    
+    # plt.grid(b=True, which='major')
+    # plt.grid(b=True, which='minor',linestyle='--')
+    ax1.grid(b=True, which='major')
+    ax1.grid(b=True, which='minor',linestyle='--')
+
+    ax1.set_ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
                np.max(result.listTrainLoss[idx_min:idx_max+1])
                )
     )
-    plt.xlim(args.xrange)    
+    ax1.set_xlim(args.xrange)    
 
-    plt.subplot(2, 1, 2)
-    plt.grid(b=True, which='major')
-    plt.grid(b=True, which='minor',linestyle='--')
-    plt.xlabel('Train Iteration')
-    plt.ylabel('Test Accuracy')
-    plt.xlim(args.xrange)    
+    #plt.subplot(2, 1, 2)
+    # plt.grid(b=True, which='major')
+    # plt.grid(b=True, which='minor',linestyle='--')
+    ax2.set_ylabel('mAP')
+    ax2.grid(b=True, which='major')
+    ax2.grid(b=True, which='minor',linestyle='--')    
+    #plt.xlim(args.xrange)    
     plt.show()
