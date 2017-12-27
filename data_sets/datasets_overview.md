@@ -1,7 +1,5 @@
 # Datasets Overview
 
-
-
 Dataset | # Images | Notes
 ---------|----------:|---------
  VOC07 | 5,011 | trainval
