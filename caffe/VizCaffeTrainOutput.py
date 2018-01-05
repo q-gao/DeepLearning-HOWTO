@@ -24,6 +24,9 @@ def CreateArgumentParser():
 
     ap.add_argument("-c", "--concatenate_logs", action="store_true",
                     help="concatenate training out logs")
+    ap.add_argument("-m", "--concatenate_mode", type=int, default = 0,
+                    help="log concatenate mode: 0 = don't adjust iteration number")
+
 
     ap.add_argument("-l", "--logy", action="store_true", default = False,
                     help="log y scale")
@@ -106,19 +109,19 @@ def MovingAverage (values, window, mode='same'):
     sma = np.convolve(values, weights, mode)
     return sma
 
-def AppendTrainingStat( src, tgt):
+def AppendTrainingStat( src, tgt, catMode = 0):
     src.listTrainLoss += tgt.listTrainLoss
     src.listTestAccuracy += tgt.listTestAccuracy
 
-    off = src.listTrainIter[-1]
+    off = src.listTrainIter[-1] if catMode != 0 else 0
     src.listTrainIter += [ e + off for e in tgt.listTrainIter ]
 
-    off = src.listTestIter[-1]
+    off = src.listTestIter[-1] if catMode != 0 else 0
     src.listTestIter += [ e + off for e in tgt.listTestIter ]
 
     return src
 
-def LoadTrainingStat( list_srcSpec, catFlag = False):
+def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
     import glob
 
     results = []
@@ -135,7 +138,7 @@ def LoadTrainingStat( list_srcSpec, catFlag = False):
                     _, fname = os.path.split(dataFile)
                     legends.append( os.path.splitext(fname)[0] )
                 elif rst is not None:
-                    AppendTrainingStat(rst, r)
+                    AppendTrainingStat(rst, r, catMode)
                 else:
                     rst = r
         else:
@@ -143,7 +146,7 @@ def LoadTrainingStat( list_srcSpec, catFlag = False):
                 results.append(GetTrainStat(srcSpec))
                 legends.append('stdin')
             elif rst is not None:
-                AppendTrainingStat(rst, r)
+                AppendTrainingStat(rst, r, catMode)
             else:
                 rst = r            
 
@@ -181,7 +184,10 @@ if __name__ == '__main__':
         args.train_out_files = [sys.stdin]
 
 
-    list_result, pltLegend = LoadTrainingStat(args.train_out_files, args.concatenate_logs)
+    list_result, pltLegend = LoadTrainingStat(args.train_out_files, 
+                                args.concatenate_logs,
+                                args.concatenate_mode
+                            )
 
     xmin = xmax = 0
     idx_min = idx_max = 0        
@@ -224,21 +230,36 @@ if __name__ == '__main__':
     ax1.set_xlabel('Train Iteration')    
     # plt.grid(b=True, which='major')
     # plt.grid(b=True, which='minor',linestyle='--')
-    ax1.grid(b=True, which='major')
-    ax1.grid(b=True, which='minor',linestyle='--')
+    # To show grid only for ax2 (details at http://matplotlib.1069221.n5.nabble.com/full-grid-for-2nd-y-axis-wit-twinx-td41259.html)
+    #  - xaxis grid is shown in ax1  # twinx => no xaxis grid for ax2
+    #  - yaxis grid is hidden in ax1
+    #   ax1.grid()
+    #   ax2.grid()
+    #   ax1.yaxis.grid(False)
+    # ax1.grid()    
+    ax1.xaxis.grid(b=True, which='major')  # 'both'
+    ax1.xaxis.grid(b=True, which='minor',linestyle=':')
+    # # see https://stackoverflow.com/questions/19940518/cannot-get-minor-grid-lines-to-appear-in-matplotlib-figure
+    # #for why ax.minorticks_on is needed
+    ax1.minorticks_on()
 
     ax1.set_ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
                np.max(result.listTrainLoss[idx_min:idx_max+1])
                )
     )
     ax1.set_xlim(args.xrange)    
-
     #plt.subplot(2, 1, 2)
     # plt.grid(b=True, which='major')
     # plt.grid(b=True, which='minor',linestyle='--')
     ax2.set_ylabel('mAP')
-    ax2.grid(b=True, which='major')
-    ax2.grid(b=True, which='minor',linestyle='--')    
+    # ax2.grid(b=True, which='major', axis='both')
+    # ax2.grid(b=True, which='minor',axis='both', linestyle=':')    
+    ax2.yaxis.grid(b=True, which='major')
+    ax2.yaxis.grid(b=True, which='minor', linestyle=':')        
+    #ax1.yaxis.grid(False)    
+    # see https://stackoverflow.com/questions/19940518/cannot-get-minor-grid-lines-to-appear-in-matplotlib-figure
+    #for why ax.minorticks_on is needed
+    ax2.minorticks_on()    
     if args.accuracy_min is not None:
         ax2.set_ylim((args.accuracy_min, max_accuracy))
 
