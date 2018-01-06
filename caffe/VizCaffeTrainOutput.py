@@ -88,24 +88,31 @@ def GetTrainStat( trainOut, selectedClass = 'class15' ):
     result.listTestIter = []
     result.listTestAccuracy = []
     result.listClassAccuracy = []
+
+    re_training_loss = re.compile(r'Train\s+net\s+output\s+.+loss\s+=\s+([\d\.]+)')
+    re_detection_eval=re.compile(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)')
+    re_selected_class = re.compile(r' {}:\s*([\d\.]+)'.format(selectedClass))
     for line in dataSrc:
         m = re.search(r'Iteration\s+(\d+)', line)
         if m:
             curIterIdx = int( m.group(1) )
 
-        m = re.search(r'Train\s+net\s+output\s+.+loss\s+=\s+([\d\.]+)', line)
+        #m = re.search(r'Train\s+net\s+output\s+.+loss\s+=\s+([\d\.]+)', line)
+        m = re_training_loss.search(line)
         if m:
             result.listTrainIter.append(curIterIdx)
             result.listTrainLoss.append( float(m.group(1)) )
 
         #m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
-        m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
+        #m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
+        m = re_detection_eval.search(line)
         if m:
             result.listTestIter.append(curIterIdx)
             result.listTestAccuracy.append( float(m.group(1)) )
             #print('mAP: {}'.format(m.group(1)))            
 
-        m = re.search(r' {}:\s*([\d\.]+)'.format(selectedClass), line)
+        #m = re.search(r' {}:\s*([\d\.]+)'.format(selectedClass), line)
+        m = re_selected_class.search(line)
         if m:
             result.listClassAccuracy.append( float(m.group(1)) )
             #print('{} AP: {}'.format(selectedClass, m.group(1) ) )            
@@ -213,8 +220,12 @@ if __name__ == '__main__':
     idx_min = idx_max = 0        
     max_accuracy = 0.0
     lines = []
+    show_raw_loss = False
     for result in list_result:
+        # print(result.listTestIter) #; import sys; sys.exit(-1)
+
         if args.plot_raw_loss or args.avg_window_size is None:
+            show_raw_loss = True
             lines+= pltFunc1(result.listTrainIter, result.listTrainLoss, label='Raw Loss')
         if args.avg_window_size is not None:  
             # [::-1] create a reversed-order view of the array                    
@@ -267,10 +278,16 @@ if __name__ == '__main__':
     # #for why ax.minorticks_on is needed
     ax1.minorticks_on()
 
-    ax1.set_ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
-               np.max(result.listTrainLoss[idx_min:idx_max+1])
-               )
-    )
+    if show_raw_loss:
+        ax1.set_ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
+                   np.max(result.listTrainLoss[idx_min:idx_max+1])
+                   )
+        )
+    else:
+        ax1.set_ylim( (np.min(avg_loss[idx_min:idx_max+1]), 
+                   np.max(avg_loss[idx_min:idx_max+1])
+                   )
+        )        
     ax1.set_xlim(args.xrange)    
     #plt.subplot(2, 1, 2)
     # plt.grid(b=True, which='major')
