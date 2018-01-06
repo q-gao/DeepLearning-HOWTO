@@ -40,9 +40,11 @@ def CreateArgumentParser():
     return ap
 
 
-def GetTrainStat( trainOut ):
+def GetTrainStat( trainOut, selectedClass = 'class15' ):
     """
-    :param trainOut: any iterable object, e.g., file object, sys.stdin
+    :param 
+      - trainOut: any iterable object, e.g., file object, sys.stdin
+      - selectedClass: 'class15' is 'person' in VOC
     :return:
 
     I1029 14:52:44.493795 25829 solver.cpp:330] Iteration 57000, Testing net (#0)
@@ -81,6 +83,7 @@ def GetTrainStat( trainOut ):
     result.listTrainLoss = []
     result.listTestIter = []
     result.listTestAccuracy = []
+    result.listClassAccuracy = []
     for line in dataSrc:
         m = re.search(r'Iteration\s+(\d+)', line)
         if m:
@@ -96,6 +99,12 @@ def GetTrainStat( trainOut ):
         if m:
             result.listTestIter.append(curIterIdx)
             result.listTestAccuracy.append( float(m.group(1)) )
+            #print('mAP: {}'.format(m.group(1)))            
+
+        m = re.search(r' {}:\s*([\d\.]+)'.format(selectedClass), line)
+        if m:
+            result.listClassAccuracy.append( float(m.group(1)) )
+            #print('{} AP: {}'.format(selectedClass, m.group(1) ) )            
 
     if isinstance(trainOut, basestring):
         dataSrc.close()
@@ -112,6 +121,7 @@ def MovingAverage (values, window, mode='same'):
 def AppendTrainingStat( src, tgt, catMode = 0):
     src.listTrainLoss += tgt.listTrainLoss
     src.listTestAccuracy += tgt.listTestAccuracy
+    src.listClassAccuracy += tgt.listClassAccuracy
 
     off = src.listTrainIter[-1] if catMode != 0 else 0
     src.listTrainIter += [ e + off for e in tgt.listTrainIter ]
@@ -159,6 +169,7 @@ def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
         r.listTrainLoss = np.array(r.listTrainLoss)
         r.listTestIter  = np.array(r.listTestIter, dtype=np.int)
         r.listTestAccuracy = np.array(r.listTestAccuracy)
+        r.listClassAccuracy = np.array(r.listClassAccuracy)
 
     return results, legends
 
@@ -206,7 +217,8 @@ if __name__ == '__main__':
 
         #plt.subplot(2, 1, 2)
         pltFunc2(result.listTestIter, result.listTestAccuracy, 'r')
-        m = np.max(result.listTestAccuracy)
+        pltFunc2(result.listTestIter, result.listClassAccuracy, 'g')
+        m = max(np.max(result.listTestAccuracy), np.max(result.listClassAccuracy))
         if max_accuracy < m:      max_accuracy = m
 
         i = np.argmin(result.listTrainIter)
@@ -223,7 +235,8 @@ if __name__ == '__main__':
     elif len(args.xrange) < 2:
         idx_min = np.searchsorted(result.listTrainIter, args.xrange[0])
         args.xrange.append(xmax)        
-    plt.legend( pltLegend )
+    #plt.legend( pltLegend )
+    ax2.legend(['mAP', 'Person AP'])
 
     #plt.subplot(2, 1, 1)
     ax1.set_ylabel('Train Loss')
