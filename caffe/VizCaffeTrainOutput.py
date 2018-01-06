@@ -69,7 +69,10 @@ def GetTrainStat( trainOut, selectedClass = 'class15' ):
     I1029 14:57:03.798398 25829 solver.cpp:397]     Test net output #0: accuracy = 0.7553
     I1029 14:57:03.798415 25829 solver.cpp:397]     Test net output #1: loss = 0.792614 (* 1 = 0.792614 loss)
     """
-    import re
+    try:
+        import re2 as re  # Google's re2 is 60% faster
+    except ImportError:
+        import re
 
     if isinstance( trainOut, basestring):
         try:
@@ -103,19 +106,21 @@ def GetTrainStat( trainOut, selectedClass = 'class15' ):
             result.listTrainIter.append(curIterIdx)
             result.listTrainLoss.append( float(m.group(1)) )
 
-        #m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
-        #m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
-        m = re_detection_eval.search(line)
-        if m:
-            result.listTestIter.append(curIterIdx)
-            result.listTestAccuracy.append( float(m.group(1)) )
-            #print('mAP: {}'.format(m.group(1)))            
+        else:
+            #m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
+            #m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
+            m = re_detection_eval.search(line)
+            if m:
+                result.listTestIter.append(curIterIdx)
+                result.listTestAccuracy.append( float(m.group(1)) )
+                #print('mAP: {}'.format(m.group(1)))            
 
-        #m = re.search(r' {}:\s*([\d\.]+)'.format(selectedClass), line)
-        m = re_selected_class.search(line)
-        if m:
-            result.listClassAccuracy.append( float(m.group(1)) )
-            #print('{} AP: {}'.format(selectedClass, m.group(1) ) )            
+            else:
+                #m = re.search(r' {}:\s*([\d\.]+)'.format(selectedClass), line)
+                m = re_selected_class.search(line)
+                if m:
+                    result.listClassAccuracy.append( float(m.group(1)) )
+                    #print('{} AP: {}'.format(selectedClass, m.group(1) ) )            
 
     if isinstance(trainOut, basestring):
         dataSrc.close()
