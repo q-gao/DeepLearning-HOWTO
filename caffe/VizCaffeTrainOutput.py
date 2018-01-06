@@ -24,9 +24,13 @@ def CreateArgumentParser():
 
     ap.add_argument("-c", "--concatenate_logs", action="store_true",
                     help="concatenate training out logs")
+
     ap.add_argument("-m", "--concatenate_mode", type=int, default = 0,
                     help="log concatenate mode: 0 = don't adjust iteration number")
 
+
+    ap.add_argument("-r", "--plot_raw_loss", action="store_true", default = False,
+                    help="plot raw training loss")
 
     ap.add_argument("-l", "--logy", action="store_true", default = False,
                     help="log y scale")
@@ -141,7 +145,9 @@ def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
     for srcSpec in list_srcSpec:
         print('Loading ' + srcSpec if isinstance(srcSpec, basestring) else 'stdin')
         if isinstance(srcSpec, basestring): 
+            found = False
             for dataFile in glob.glob(srcSpec):
+                found = True
                 r = GetTrainStat( dataFile )
                 if not catFlag:
                     results.append(r)
@@ -151,6 +157,9 @@ def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
                     AppendTrainingStat(rst, r, catMode)
                 else:
                     rst = r
+            if not found:
+                print('FAILED to find files matching \'{}\''.format(srcSpec))
+                import sys; sys.exit(-1)
         else:
             if not catFlag:
                 results.append(GetTrainStat(srcSpec))
@@ -203,8 +212,10 @@ if __name__ == '__main__':
     xmin = xmax = 0
     idx_min = idx_max = 0        
     max_accuracy = 0.0
+    lines = []
     for result in list_result:
-        pltFunc1(result.listTrainIter, result.listTrainLoss)
+        if args.plot_raw_loss or args.avg_window_size is None:
+            lines+= pltFunc1(result.listTrainIter, result.listTrainLoss, label='Raw Loss')
         if args.avg_window_size is not None:  
             # [::-1] create a reversed-order view of the array                    
             # a = np.append(result.listTrainLoss, 
@@ -213,11 +224,11 @@ if __name__ == '__main__':
             #a = np.array([result.listTrainLoss[i] for i in xrange(result.listTrainLoss.shape[0]-1, -1, -1) ])
             avg_loss = MovingAverage(result.listTrainLoss, args.avg_window_size)                    
             #avg_loss = MovingAverage(result.listTrainLoss[::-1], args.avg_window_size)
-            pltFunc1(result.listTrainIter, avg_loss)                
+            lines+= pltFunc1(result.listTrainIter, avg_loss, label='Averged Loss')
 
         #plt.subplot(2, 1, 2)
-        pltFunc2(result.listTestIter, result.listTestAccuracy, 'r')
-        pltFunc2(result.listTestIter, result.listClassAccuracy, 'g')
+        lines+=pltFunc2(result.listTestIter, result.listTestAccuracy, 'r', label='mAP')
+        lines+=pltFunc2(result.listTestIter, result.listClassAccuracy, 'g', label='Person AP')
         m = max(np.max(result.listTestAccuracy), np.max(result.listClassAccuracy))
         if max_accuracy < m:      max_accuracy = m
 
@@ -236,7 +247,7 @@ if __name__ == '__main__':
         idx_min = np.searchsorted(result.listTrainIter, args.xrange[0])
         args.xrange.append(xmax)        
     #plt.legend( pltLegend )
-    ax2.legend(['mAP', 'Person AP'])
+    ax2.legend(lines, [l.get_label() for l in lines])
 
     #plt.subplot(2, 1, 1)
     ax1.set_ylabel('Train Loss')
