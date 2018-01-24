@@ -54,6 +54,12 @@ OpenCV 2.4 uses it
 
 It is possible that you have OpenCV installed as Anaconda package, but ALSO as system package. Then at link/load time when it tries to link/load OpenCV, it also tried to load libtiff.so and finds the system package instead of the Anaconda package.
 
+If the building script encounters `ld` errors with regard to `/usr/lib/x86_64-linux-gnu/libopencv`: ld tried to load libtiff installed in Anaconda instead of `/usr/lib/x86_64-linux-gnu`. The following forces `ld` to use `/usr/lib/x86_64-linux-gnu`
+
+```sh
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+```
+
 
 
 

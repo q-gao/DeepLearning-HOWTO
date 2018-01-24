@@ -1,4 +1,17 @@
+<!-- TOC -->
+
+- [`caffe2` Set-up](#caffe2-set-up)
+    - [Building](#building)
+        - [Issues](#issues)
+            - [Multiple `libopencv`](#multiple-libopencv)
+    - [Run](#run)
+- [`Detectron` Set-up](#detectron-set-up)
+
+<!-- /TOC -->
+
 # `caffe2` Set-up
+
+Use **python 2.7**
 
 ## Building
 
@@ -32,4 +45,13 @@ For running caffe2
 ```sh
 conda install -c anaconda future
 conda install -c conda-forge hypothesis
+```
+
+# `Detectron` Set-up
+
+Use `python2` in its script.
+
+Anaconda has `pip`
+```sh
+pip install opencv-python>=3.0 mock
 ```
