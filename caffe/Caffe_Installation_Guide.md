@@ -50,6 +50,10 @@ OpenCV 2.4 uses it
 
 [How-to Install libtiff4 for Ubuntu 14.04 Trusty LTSLinux Easy Guide](https://tutorialforlinux.com/2014/06/16/how-to-install-libtiff4-for-ubuntu-14-04-trusty-lts-linux-easy-guide/)
 
+**mixing Anaconda packages with system packages.**
+
+It is possible that you have OpenCV installed as Anaconda package, but ALSO as system package. Then at link/load time when it tries to link/load OpenCV, it also tried to load libtiff.so and finds the system package instead of the Anaconda package.
+
 
 
 
