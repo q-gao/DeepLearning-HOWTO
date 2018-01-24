@@ -24,9 +24,13 @@ def CreateArgumentParser():
 
     ap.add_argument("-c", "--concatenate_logs", action="store_true",
                     help="concatenate training out logs")
+
     ap.add_argument("-m", "--concatenate_mode", type=int, default = 0,
                     help="log concatenate mode: 0 = don't adjust iteration number")
 
+
+    ap.add_argument("-r", "--plot_raw_loss", action="store_true", default = False,
+                    help="plot raw training loss")
 
     ap.add_argument("-l", "--logy", action="store_true", default = False,
                     help="log y scale")
@@ -40,9 +44,11 @@ def CreateArgumentParser():
     return ap
 
 
-def GetTrainStat( trainOut ):
+def GetTrainStat( trainOut, selectedClass = 'class15' ):
     """
-    :param trainOut: any iterable object, e.g., file object, sys.stdin
+    :param 
+      - trainOut: any iterable object, e.g., file object, sys.stdin
+      - selectedClass: 'class15' is 'person' in VOC
     :return:
 
     I1029 14:52:44.493795 25829 solver.cpp:330] Iteration 57000, Testing net (#0)
@@ -63,7 +69,10 @@ def GetTrainStat( trainOut ):
     I1029 14:57:03.798398 25829 solver.cpp:397]     Test net output #0: accuracy = 0.7553
     I1029 14:57:03.798415 25829 solver.cpp:397]     Test net output #1: loss = 0.792614 (* 1 = 0.792614 loss)
     """
-    import re
+    try:
+        import re2 as re  # Google's re2 is 60% faster
+    except ImportError:
+        import re
 
     if isinstance( trainOut, basestring):
         try:
@@ -81,21 +90,37 @@ def GetTrainStat( trainOut ):
     result.listTrainLoss = []
     result.listTestIter = []
     result.listTestAccuracy = []
+    result.listClassAccuracy = []
+
+    re_training_loss = re.compile(r'Train\s+net\s+output\s+.+loss\s+=\s+([\d\.]+)')
+    re_detection_eval=re.compile(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)')
+    re_selected_class = re.compile(r' {}:\s*([\d\.]+)'.format(selectedClass))
     for line in dataSrc:
         m = re.search(r'Iteration\s+(\d+)', line)
         if m:
             curIterIdx = int( m.group(1) )
 
-        m = re.search(r'Train\s+net\s+output\s+.+loss\s+=\s+([\d\.]+)', line)
+        #m = re.search(r'Train\s+net\s+output\s+.+loss\s+=\s+([\d\.]+)', line)
+        m = re_training_loss.search(line)
         if m:
             result.listTrainIter.append(curIterIdx)
             result.listTrainLoss.append( float(m.group(1)) )
 
-        #m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
-        m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
-        if m:
-            result.listTestIter.append(curIterIdx)
-            result.listTestAccuracy.append( float(m.group(1)) )
+        else:
+            #m = re.search(r'Test\s+net\s+output\s+.+accuracy\s+=\s+([\d\.]+)', line)
+            #m = re.search(r'Test\s+net\s+output\s+.+detection_eval\s+=\s+([\d\.]+)', line)
+            m = re_detection_eval.search(line)
+            if m:
+                result.listTestIter.append(curIterIdx)
+                result.listTestAccuracy.append( float(m.group(1)) )
+                #print('mAP: {}'.format(m.group(1)))            
+
+            else:
+                #m = re.search(r' {}:\s*([\d\.]+)'.format(selectedClass), line)
+                m = re_selected_class.search(line)
+                if m:
+                    result.listClassAccuracy.append( float(m.group(1)) )
+                    #print('{} AP: {}'.format(selectedClass, m.group(1) ) )            
 
     if isinstance(trainOut, basestring):
         dataSrc.close()
@@ -112,6 +137,7 @@ def MovingAverage (values, window, mode='same'):
 def AppendTrainingStat( src, tgt, catMode = 0):
     src.listTrainLoss += tgt.listTrainLoss
     src.listTestAccuracy += tgt.listTestAccuracy
+    src.listClassAccuracy += tgt.listClassAccuracy
 
     off = src.listTrainIter[-1] if catMode != 0 else 0
     src.listTrainIter += [ e + off for e in tgt.listTrainIter ]
@@ -131,7 +157,9 @@ def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
     for srcSpec in list_srcSpec:
         print('Loading ' + srcSpec if isinstance(srcSpec, basestring) else 'stdin')
         if isinstance(srcSpec, basestring): 
+            found = False
             for dataFile in glob.glob(srcSpec):
+                found = True
                 r = GetTrainStat( dataFile )
                 if not catFlag:
                     results.append(r)
@@ -141,6 +169,9 @@ def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
                     AppendTrainingStat(rst, r, catMode)
                 else:
                     rst = r
+            if not found:
+                print('FAILED to find files matching \'{}\''.format(srcSpec))
+                import sys; sys.exit(-1)
         else:
             if not catFlag:
                 results.append(GetTrainStat(srcSpec))
@@ -159,6 +190,7 @@ def LoadTrainingStat( list_srcSpec, catFlag = False, catMode = 0):
         r.listTrainLoss = np.array(r.listTrainLoss)
         r.listTestIter  = np.array(r.listTestIter, dtype=np.int)
         r.listTestAccuracy = np.array(r.listTestAccuracy)
+        r.listClassAccuracy = np.array(r.listClassAccuracy)
 
     return results, legends
 
@@ -192,8 +224,14 @@ if __name__ == '__main__':
     xmin = xmax = 0
     idx_min = idx_max = 0        
     max_accuracy = 0.0
+    lines = []
+    show_raw_loss = False
     for result in list_result:
-        pltFunc1(result.listTrainIter, result.listTrainLoss)
+        # print(result.listTestIter) #; import sys; sys.exit(-1)
+
+        if args.plot_raw_loss or args.avg_window_size is None:
+            show_raw_loss = True
+            lines+= pltFunc1(result.listTrainIter, result.listTrainLoss, label='Raw Loss')
         if args.avg_window_size is not None:  
             # [::-1] create a reversed-order view of the array                    
             # a = np.append(result.listTrainLoss, 
@@ -202,11 +240,12 @@ if __name__ == '__main__':
             #a = np.array([result.listTrainLoss[i] for i in xrange(result.listTrainLoss.shape[0]-1, -1, -1) ])
             avg_loss = MovingAverage(result.listTrainLoss, args.avg_window_size)                    
             #avg_loss = MovingAverage(result.listTrainLoss[::-1], args.avg_window_size)
-            pltFunc1(result.listTrainIter, avg_loss)                
+            lines+= pltFunc1(result.listTrainIter, avg_loss, label='Averged Loss')
 
         #plt.subplot(2, 1, 2)
-        pltFunc2(result.listTestIter, result.listTestAccuracy, 'r')
-        m = np.max(result.listTestAccuracy)
+        lines+=pltFunc2(result.listTestIter, result.listTestAccuracy, 'r', label='mAP')
+        lines+=pltFunc2(result.listTestIter, result.listClassAccuracy, 'g', label='Person AP')
+        m = max(np.max(result.listTestAccuracy), np.max(result.listClassAccuracy))
         if max_accuracy < m:      max_accuracy = m
 
         i = np.argmin(result.listTrainIter)
@@ -223,7 +262,8 @@ if __name__ == '__main__':
     elif len(args.xrange) < 2:
         idx_min = np.searchsorted(result.listTrainIter, args.xrange[0])
         args.xrange.append(xmax)        
-    plt.legend( pltLegend )
+    #plt.legend( pltLegend )
+    ax2.legend(lines, [l.get_label() for l in lines])
 
     #plt.subplot(2, 1, 1)
     ax1.set_ylabel('Train Loss')
@@ -243,10 +283,16 @@ if __name__ == '__main__':
     # #for why ax.minorticks_on is needed
     ax1.minorticks_on()
 
-    ax1.set_ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
-               np.max(result.listTrainLoss[idx_min:idx_max+1])
-               )
-    )
+    if show_raw_loss:
+        ax1.set_ylim( (np.min(result.listTrainLoss[idx_min:idx_max+1]), 
+                   np.max(result.listTrainLoss[idx_min:idx_max+1])
+                   )
+        )
+    else:
+        ax1.set_ylim( (np.min(avg_loss[idx_min:idx_max+1]), 
+                   np.max(avg_loss[idx_min:idx_max+1])
+                   )
+        )        
     ax1.set_xlim(args.xrange)    
     #plt.subplot(2, 1, 2)
     # plt.grid(b=True, which='major')
