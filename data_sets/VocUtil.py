@@ -4,6 +4,8 @@ from __future__ import print_function
 import textwrap
 
 from PIL import Image
+from math import ceil
+
 mode_to_bpp = {'1':1, 
                 'L':8,   # grey (levels)
                 'P':8,   # pesudo color?
@@ -19,7 +21,10 @@ def GetImageDimension(img_file):
         # for depth, see
         # https://stackoverflow.com/questions/1996577/how-can-i-get-the-depth-of-a-jpg-file
         with Image.open(img_file) as im:            
-            return (im.size[0], im.size[1], mode_to_bpp[im.mode])
+            depth = int(ceil(mode_to_bpp[im.mode] / 8 )) # from bits to # channels
+            if depth <= 0:    depth = 1
+            return (im.size[0], im.size[1], depth)
+
     except IOError:
         return (None, None, None)
 
@@ -61,8 +66,8 @@ class VocGtWriter:
     '''  # name xmin ymin xmax ymax
 
     @staticmethod
-    def GenGtXml(folder, imgInfo, imgAnnotation):
-        xmlFixed = VocGtWriter.templateFixed.format(folder,  # folder
+    def GenGtXml(dataset_root, imgInfo, imgAnnotation):
+        xmlFixed = VocGtWriter.templateFixed.format(dataset_root,  # folder
                                imgInfo['file_name'],  # image file name
                                imgInfo['width'],  # image width
                                imgInfo['height'],  # image height

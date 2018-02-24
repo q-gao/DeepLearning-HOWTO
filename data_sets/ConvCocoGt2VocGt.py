@@ -75,17 +75,11 @@ class Coco2VocGTConveter:
                     print('FAILED to open {} in {}'.format(imgFileNm, imgDir))
                     import sys; sys.exit(-1)
 
-                ii['depth'] = ceil(ii['depth'] / 8) # from bits to # channels
-                if ii['depth'] <= 0:    ii['depth'] = 1
-
-                if ii['depth'] != 3:
-                    print(imgFileNm, ii['depth'])
-
                 vocXml = self.PerImgConvert(ii, anns)
                 if vocXml is None:  continue
                 d_includedImgNms[imgFileNm] = True
                 xmlFileNm = vocXmlDir + '/' +  os.path.splitext(imgFileNm)[0] + '.xml'
-                #print("{} => {}".format(imgFileNm, xmlFileNm))
+                print("{} => {}".format(imgFileNm, xmlFileNm))
                 try:
                     with open(xmlFileNm, 'w') as f:
                         f.write(vocXml)
