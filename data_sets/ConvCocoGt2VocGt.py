@@ -2,8 +2,10 @@
 from __future__ import print_function
 
 from pycocotools.coco import COCO
-import textwrap
 import os.path
+
+from VocUtil import *
+from math import ceil as ceil
 
 class Coco2VocGTConveter:
     d_VocLabel2CocoLabel = {
@@ -26,48 +28,13 @@ class Coco2VocGTConveter:
         'sheep': 1, 'sofa': 1,
         'train': 1, 'tvmonitor': 1
     }
-    templateFixed = '''\
-      <annotation>
-        <folder>{}</folder>
-        <filename>{}</filename> 
-        <source>
-            <database>The COCO Database</database>
-            <annotation>COCO</annotation>
-            <image>flickr</image>
-            <flickrid>TBD</flickrid>
-        </source>
-        <owner>
-            <flickrid>TBD</flickrid>
-            <name>TBD</name>
-        </owner>
-        <size>
-            <width>{}</width>
-            <height>{}</height>
-            <depth>3</depth>
-        </size>
-        <segmented>0</segmented>   
-    '''  # folder filename, width, height
-    templateObj = '''\
-        <object>
-            <name>{}</name>
-            <pose>Left</pose>
-            <truncated>1</truncated>
-            <difficult>0</difficult>
-            <bndbox>
-                <xmin>{}</xmin>
-                <ymin>{}</ymin>
-                <xmax>{}</xmax>
-                <ymax>{}</ymax>
-            </bndbox>
-        </object>    
-    '''  # name xmin ymin xmax ymax
 
     def __init__(self):
         self.d_CocoLabel2VocLabel = {}
         for k, v in Coco2VocGTConveter.d_VocLabel2CocoLabel.items():
             self.d_CocoLabel2VocLabel[v] = k
 
-    def ConvertFile(self, cocoJsonFile, vocXmlDir, imgListFile):
+    def ConvertFile(self, cocoJsonFile, imgDir, vocXmlDir, imgListFile):
         # load Json
         print('Loading COCO GT {} ...'.format(cocoJsonFile))
         coco_gt = COCO(cocoJsonFile)
@@ -103,17 +70,28 @@ class Coco2VocGTConveter:
                 imgFileNm = ii['file_name']
                 if imgFileNm in d_includedImgNms:  continue
 
+                _, _, ii['depth'] = GetImageDimension(os.path.join(imgDir, imgFileNm))
+                if ii['depth'] is None:
+                    print('FAILED to open {} in {}'.format(imgFileNm, imgDir))
+                    import sys; sys.exit(-1)
+
+                ii['depth'] = ceil(ii['depth'] / 8) # from bits to # channels
+                if ii['depth'] <= 0:    ii['depth'] = 1
+
+                if ii['depth'] != 3:
+                    print(imgFileNm, ii['depth'])
+
                 vocXml = self.PerImgConvert(ii, anns)
                 if vocXml is None:  continue
                 d_includedImgNms[imgFileNm] = True
                 xmlFileNm = vocXmlDir + '/' +  os.path.splitext(imgFileNm)[0] + '.xml'
-                print("{} => {}".format(imgFileNm, xmlFileNm))
+                #print("{} => {}".format(imgFileNm, xmlFileNm))
                 try:
                     with open(xmlFileNm, 'w') as f:
                         f.write(vocXml)
                     numXmlFiles+= 1
                 except IOError:
-                    print('Failed to open {} for writing'.format(numXmlFiles))
+                    print('Failed to open {} for writing'.format(xmlFileNm))
 
         print('\nCreating image list file {} ...'.format(imgListFile))
         with open(imgListFile, 'w') as f:
@@ -121,6 +99,7 @@ class Coco2VocGTConveter:
                 f.write(os.path.splitext(imgFileNm)[0] + '\n')
 
         print('\nTotal {} VOC XML files are generated: numIsCrowd={}'.format(numXmlFiles, self.numIsCrowd))
+
     def PerImgConvert(self, cocoImgInfo, cocoAnno):
         '''
         cocoImgInfo:
@@ -144,8 +123,12 @@ class Coco2VocGTConveter:
         id             28385
         '''
 
-        xmlObj = ''
+        anno = []
         for a in cocoAnno:
+            if a['iscrowd']:
+                self.numIsCrowd += 1
+                continue
+
             catNm = self.d_catId2Name[a['category_id']]
             if catNm in self.d_CocoLabel2VocLabel:
                 vocCatNm = self.d_CocoLabel2VocLabel[catNm]
@@ -153,26 +136,23 @@ class Coco2VocGTConveter:
                 vocCatNm = catNm
             if vocCatNm not in Coco2VocGTConveter.d_voc_labels:
                 continue
-            if a['iscrowd']:
-                self.numIsCrowd += 1
-                continue
             xmin = float(a['bbox'][0])
             ymin = float(a['bbox'][1])
-            xmax = float(a['bbox'][2]) + xmin
-            ymax = float(a['bbox'][3]) + ymin
-            xmlObj += Coco2VocGTConveter.templateObj.format(
-                vocCatNm,
-                int(xmin + 0.5), int(ymin + 0.5), int(xmax + 0.5), int(ymax + 0.5)
-            )
-        if xmlObj == '':
-            return None
-        xmlFixed = Coco2VocGTConveter.templateFixed.format('COCO35k',  # folder
-                                                           cocoImgInfo['file_name'],  # image file name
-                                                           cocoImgInfo['width'],  # image width
-                                                           cocoImgInfo['height']  # image height
-                                                           )
+            xmax = int(float(a['bbox'][2]) + xmin + 0.5)
+            ymax = int(float(a['bbox'][3]) + ymin + 0.5)
+            xmin = int(xmin + 0.5)
+            ymin = int(ymin + 0.5)
 
-        return textwrap.dedent(xmlFixed + xmlObj) + '</annotation>\n'
+            anno.append(
+                {   "category_name" : vocCatNm,
+                    "bbox"          : [xmin, ymin, xmax, ymax]
+                }
+            )
+
+        if len(anno) <= 0:
+            return None
+
+        return VocGtWriter.GenGtXml( 'COCO35k', cocoImgInfo, anno)
 
 if __name__ == '__main__':
     c = Coco2VocGTConveter()
@@ -185,6 +165,9 @@ if __name__ == '__main__':
     #cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_minival2014.json'
     #cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_valminusminival2014.json'
     cocoGtFile = '/local/mnt/workspace/qgao/COCO/annotations/instances_val2014.json'
-    c.ConvertFile(cocoGtFile, '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/Annotations',
-                  '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/ImageSets/Main/val2014.txt'
-    )
+    imgDir = '/local/mnt/workspace/qgao/COCO/images/val2014'
+    # c.ConvertFile(cocoGtFile, '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/Annotations',
+    #               '/local/mnt/workspace/qgao/VOCData/VOCdevkit/COCO_val2014/ImageSets/Main/val2014.txt'
+    # )
+
+    c.ConvertFile(cocoGtFile, imgDir, 'tmp', 't.txt')
