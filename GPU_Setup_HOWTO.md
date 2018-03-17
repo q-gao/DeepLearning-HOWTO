@@ -58,8 +58,8 @@ It took me some time as my machine was quite messed up due to various factors:
 - It has both Driver 384 and 387 (probably installed by IT)
 - I use apt to uninstall CUDA and driver, but somehow apt doesn’t do clean uninstallation.
 
-Once I used “dpkg --purge" to do a manual clean uninstallation,  following https://laylatadjpour.wordpress.com/2017/05/29/installing-gtx-1080-ti-drivers-cuda-8-0-on-ubuntu-16-04/ will successfully downgrade it.
-
+Once I used “dpkg --purge" to do a manual clean uninstallation,  following [steps to install CUDA without driver](https://laylatadjpour.wordpress.com/2017/05/29/installing-gtx-1080-ti-drivers-cuda-8-0-on-ubuntu-16-04/) will successfully downgrade it.
+> It is OK to install multiple CUDA's. The only environment variables that matter are PATH and LD_LIBRARY_PATH. 
 
 # Example - 1080Ti on Ubuntu 16.04
 
