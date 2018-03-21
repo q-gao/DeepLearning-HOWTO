@@ -42,6 +42,12 @@ ii  nvidia-prime                               0.8.2                            
 ii  nvidia-settings                            387.22-0ubuntu0~gpu16.04.1                   amd64        Tool for configuring the NVIDIA graphics driver
 ```
 
+Another example on 8-GPU system with docker
+```sh
+ii  nvidia-docker                          1.0.1-1                                      amd64        NVIDIA Docker container tools
+ii  nvidia-modprobe                        361.28-1                                     amd64        utility to load NVIDIA kernel modules and create device nodes
+```
+
 ### Clean Uninstallation
 
 Use `dpkg --purge` to force a manual clean uninstallation. `apt` sometimes doesn't do clean uninstallation.
@@ -122,11 +128,12 @@ Info: the current GL alternatives in use are: ['nvidia-384', 'nvidia-384']
 Info: the current EGL alternatives in use are: ['nvidia-384', 'nvidia-384']
 
 ```shell
-# remove cuda
+#remove cuda
 sudo apt-get autoremove --purge cuda
 ```
+
 see [here to remove apt repo](https://unix.stackexchange.com/questions/219341/how-to-apt-delete-repository)
-```
+```shell
 # This does NOT work
 sudo add-apt-repository -r file:/var/cuda-repo-9-1-local
 ```
