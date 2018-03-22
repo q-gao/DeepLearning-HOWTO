@@ -66,16 +66,15 @@ v12 = theano.shared(numpy.random.random((1024, 1024)).astype('float32'),
 
 **my fix on Ubuntu 16.04**
 
-```sh
-# MKL is a optimized version of BLAS
-setenv MKL_THREADING_LAYER GNU
+```shell
+ # MKL is a optimized version of BLAS
+export MKL_THREADING_LAYER=GNU
 locate libmkl
-# Add libmkl path
-setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/local/mnt/workspace/Apps/anaconda2/lib
+ # Add libmkl path
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/local/mnt/workspace/Apps/anaconda2/lib
+ # see http://deeplearning.net/software/theano/troubleshooting.html#how-do-i-configure-test-my-blas-library
+THEANO_FLAGS=blas.ldflags="-lmkl -lguide -lpthread" python -c 'import theano'
 ```
-http://deeplearning.net/software/theano/troubleshooting.html#how-do-i-configure-test-my-blas-library
-
-
 
 > It mean Theano can't find blas. So it call it indirectly via numpy. This
 slow down computation for many technical reason.

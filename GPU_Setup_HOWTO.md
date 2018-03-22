@@ -182,3 +182,37 @@ According to Caffe, "cuDNN is sometimes but not always faster than Caffe’s GPU
 ```
  sudo apt-get install libatlas-base-dev
 ```
+
+# Trouble Shooting
+
+## Failed to initialize NVML: Driver/library version mismatch
+
+Running `nvidia-smi` gets the following error
+```shell
+nvidia-smi
+ # NVML = nVidia Mgmt Lib
+Failed to initialize NVML: Driver/library version mismatch
+```
+
+Use `dmesg` to print out kernel message buffer
+```
+[5892846.119485] NVRM: API mismatch: the client has the version 384.111, but
+                 NVRM: this kernel module has the version 384.98.  Please
+                 NVRM: make sure that this kernel module and all NVIDIA driver
+                 NVRM: components have the same version
+```
+
+```shell
+cat /proc/driver/nvidia/version
+NVRM version: NVIDIA UNIX x86_64 Kernel Module  384.98  Thu Oct 26 15:16:01 PDT 2017
+GCC version:  gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.5)
+```
+
+### My fix
+
+Reinstall nVidia driver fixed it (see instruction [here](https://laylatadjpour.wordpress.com/2017/05/29/installing-gtx-1080-ti-drivers-cuda-8-0-on-ubuntu-16-04/))!
+```shell
+ # use 'dpkg --purge' to uninstall current driver
+ # re-install: instruction link above
+ # reboot
+```
