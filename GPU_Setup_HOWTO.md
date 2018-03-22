@@ -11,12 +11,6 @@
             - [`lmdb`](#lmdb)
         - [Caffe's General Dependencies](#caffes-general-dependencies)
         - [CUDA Toolkit](#cuda-toolkit)
-- [remove cuda](#remove-cuda)
-- [This does NOT work](#this-does-not-work)
-- [create /var/cuda-repo-9-1-local for apt-get to use](#create-varcuda-repo-9-1-local-for-apt-get-to-use)
-- [add cuda public key](#add-cuda-public-key)
-- [apt-get it](#apt-get-it)
-- [to install patch](#to-install-patch)
 
 <!-- /TOC -->
 
@@ -128,28 +122,29 @@ Info: the current GL alternatives in use are: ['nvidia-384', 'nvidia-384']
 Info: the current EGL alternatives in use are: ['nvidia-384', 'nvidia-384']
 
 ```shell
-#remove cuda
+ # remove cuda
 sudo apt-get autoremove --purge cuda
 ```
 
 see [here to remove apt repo](https://unix.stackexchange.com/questions/219341/how-to-apt-delete-repository)
 ```shell
-# This does NOT work
+ # This does NOT work
 sudo add-apt-repository -r file:/var/cuda-repo-9-1-local
 ```
 
 #### Steps
 [Instructions on how to install CUDA patch](https://askubuntu.com/questions/944219/how-to-complete-a-dpkg-cublas-patch-update-to-cuda-8-installation-in-16-04)
+
 ```shell
-# create /var/cuda-repo-9-1-local for apt-get to use
+ # create /var/cuda-repo-9-1-local for apt-get to use
 sudo dpkg -i cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64.deb
-# add cuda public key
+ # add cuda public key
 sudo apt-key add /var/cuda-repo-9-1-local/7fa2af80.pub
-# apt-get it
+ # apt-get it
 sudo apt-get update
 sudo apt-get install cuda
 
-# to install patch
+ # to install patch
 sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64.deb
 sudo apt-get update  
 sudo apt-get upgrade cuda
