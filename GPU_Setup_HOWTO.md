@@ -19,7 +19,7 @@
 1080 Ti works with the followings on Ubuntu 16.04:
 - CUDA 8.0
 - cuDNN 5.1
-- Driver 384
+- Driver 384: 384.81 on `boxxgx8`
 
 ## Find out what nVidia Driver and CUDA Toolkit have been installed
 
@@ -60,6 +60,12 @@ It took me some time as my machine was quite messed up due to various factors:
 
 Once I used “dpkg --purge" to do a manual clean uninstallation,  following [steps to install CUDA without driver](https://laylatadjpour.wordpress.com/2017/05/29/installing-gtx-1080-ti-drivers-cuda-8-0-on-ubuntu-16-04/) will successfully downgrade it.
 > It is OK to install multiple CUDA's. The only environment variables that matter are PATH and LD_LIBRARY_PATH. 
+
+>**Two methods to install drivers**:
+>  * use apt-get as shown in [steps to install CUDA without driver](https://laylatadjpour.wordpress.com/2017/05/29/installing-gtx-1080-ti-drivers-cuda-8-0-on-ubuntu-16-04/)
+>     * uninstall via `dpkg --purge`
+>  * manually download driver from nvidia (old nvidia drivers: http://www.nvidia.com/drivers/beta)
+>    * uninstall via, e.g., `NVIDIA-Linux-x86-310.19.run --uninstall` (see [here](NVIDIA-Linux-x86-310.19.run --uninstall))
 
 # Example - 1080Ti on Ubuntu 16.04
 
@@ -184,6 +190,17 @@ According to Caffe, "cuDNN is sometimes but not always faster than Caffe’s GPU
 ```
 
 # Trouble Shooting
+
+## Nvidia 384.111 driver install fails on 16.04
+See https://askubuntu.com/questions/996312/nvidia-384-111-driver-install-fails-on-16-04
+>When uninstalling the 1000 nvidia/cuda/cudnn packages, dpkg wont actually remove dkms (Dynamic Kernel Module System) files located in /var/lib/dkms.
+
+>Mind boggling that you are required to simply know/intuit this, but Linux demands this of you.
+
+>This command solved the problem for me:
+
+>sudo rm -rf /var/lib/dkms
+After this the normal sudo apt-get install nvidia-384 command executed as expected since dkms didn't fail along the way.
 
 ## Failed to initialize NVML: Driver/library version mismatch
 
